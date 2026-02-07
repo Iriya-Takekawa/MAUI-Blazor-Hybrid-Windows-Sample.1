@@ -1,0 +1,28 @@
+@page "/"
+
+<PageTitle>Home</PageTitle>
+
+<h1>MAUI Blazor Hybrid Sample</h1>
+
+<p>Welcome to the MAUI Blazor Hybrid Windows Sample application!</p>
+
+<div class="alert alert-info">
+    <h4>Features</h4>
+    <ul>
+        <li><strong>Categories:</strong> Manage product categories</li>
+        <li><strong>Items:</strong> Manage items with category association</li>
+        <li><strong>Export/Import:</strong> Backup and restore database</li>
+        <li><strong>Report:</strong> View report template information</li>
+        <li><strong>Excel Definition:</strong> View database schema definition from Excel</li>
+    </ul>
+</div>
+
+<div class="alert alert-success">
+    <h4>Database Information</h4>
+    <p>Database Location: @dbPath</p>
+    <p>Status: @(System.IO.File.Exists(dbPath) ? "Initialized" : "Not Found")</p>
+</div>
+
+@code {
+    private string dbPath = Path.Combine(FileSystem.AppDataDirectory, "app.db");
+}

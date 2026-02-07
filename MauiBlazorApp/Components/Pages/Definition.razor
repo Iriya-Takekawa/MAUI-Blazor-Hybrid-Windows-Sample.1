@@ -1,0 +1,53 @@
+@page "/definition"
+@using MauiBlazorApp.Services
+@inject IExcelDefinitionService DefinitionService
+
+<PageTitle>Excel Definition</PageTitle>
+
+<h1>Excel Definition (DataModel.xlsx)</h1>
+
+<div class="mb-3">
+    <button class="btn btn-primary" @onclick="LoadDefinition" disabled="@isLoading">
+        @if (isLoading)
+        {
+            <span>Loading...</span>
+        }
+        else
+        {
+            <span>Load Definition</span>
+        }
+    </button>
+</div>
+
+@if (!string.IsNullOrEmpty(definitionContent))
+{
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Definition Content</h5>
+            <pre class="bg-light p-3" style="white-space: pre-wrap;">@definitionContent</pre>
+        </div>
+    </div>
+}
+
+@code {
+    private string definitionContent = string.Empty;
+    private bool isLoading = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDefinition();
+    }
+
+    private async Task LoadDefinition()
+    {
+        isLoading = true;
+        try
+        {
+            definitionContent = await DefinitionService.ReadAndValidateDefinitionAsync();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

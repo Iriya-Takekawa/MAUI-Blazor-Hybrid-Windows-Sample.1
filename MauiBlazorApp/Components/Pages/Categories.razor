@@ -1,0 +1,155 @@
+@page "/categories"
+@using MauiBlazorApp.Data
+@using MauiBlazorApp.Models
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<AppDbContext> DbFactory
+
+<PageTitle>Categories</PageTitle>
+
+<h1>Categories</h1>
+
+<div class="mb-3">
+    <button class="btn btn-primary" @onclick="ShowAddForm">Add New Category</button>
+</div>
+
+@if (showForm)
+{
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title">@(editingCategory?.Id > 0 ? "Edit" : "Add") Category</h5>
+            <EditForm Model="editingCategory" OnValidSubmit="SaveCategory">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="mb-3">
+                    <label class="form-label">Code:</label>
+                    <InputText class="form-control" @bind-Value="editingCategory!.Code" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Name:</label>
+                    <InputText class="form-control" @bind-Value="editingCategory!.Name" />
+                </div>
+
+                <button type="submit" class="btn btn-success">Save</button>
+                <button type="button" class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@if (message != null)
+{
+    <div class="alert alert-info">@message</div>
+}
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Code</th>
+            <th>Name</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var category in categories)
+        {
+            <tr>
+                <td>@category.Id</td>
+                <td>@category.Code</td>
+                <td>@category.Name</td>
+                <td>
+                    <button class="btn btn-sm btn-warning" @onclick="() => EditCategory(category)">Edit</button>
+                    <button class="btn btn-sm btn-danger" @onclick="() => DeleteCategory(category)">Delete</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    private List<Category> categories = new();
+    private Category? editingCategory;
+    private bool showForm = false;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategories();
+    }
+
+    private async Task LoadCategories()
+    {
+        using var context = await DbFactory.CreateDbContextAsync();
+        categories = await context.Categories.OrderBy(c => c.Code).ToListAsync();
+    }
+
+    private void ShowAddForm()
+    {
+        editingCategory = new Category();
+        showForm = true;
+        message = null;
+    }
+
+    private void EditCategory(Category category)
+    {
+        editingCategory = new Category
+        {
+            Id = category.Id,
+            Code = category.Code,
+            Name = category.Name
+        };
+        showForm = true;
+        message = null;
+    }
+
+    private async Task SaveCategory()
+    {
+        try
+        {
+            using var context = await DbFactory.CreateDbContextAsync();
+            
+            if (editingCategory!.Id == 0)
+            {
+                context.Categories.Add(editingCategory);
+            }
+            else
+            {
+                context.Categories.Update(editingCategory);
+            }
+            
+            await context.SaveChangesAsync();
+            message = "Category saved successfully";
+            showForm = false;
+            await LoadCategories();
+        }
+        catch (Exception ex)
+        {
+            message = $"Error: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteCategory(Category category)
+    {
+        try
+        {
+            using var context = await DbFactory.CreateDbContextAsync();
+            context.Categories.Remove(category);
+            await context.SaveChangesAsync();
+            message = "Category deleted successfully";
+            await LoadCategories();
+        }
+        catch (Exception ex)
+        {
+            message = $"Error: {ex.Message}";
+        }
+    }
+
+    private void CancelEdit()
+    {
+        showForm = false;
+        editingCategory = null;
+        message = null;
+    }
+}

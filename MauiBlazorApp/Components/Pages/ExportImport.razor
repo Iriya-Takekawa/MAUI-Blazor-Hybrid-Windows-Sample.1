@@ -1,0 +1,108 @@
+@page "/export-import"
+@using MauiBlazorApp.Services
+@inject IDataExportImportService ExportImportService
+
+<PageTitle>Export/Import</PageTitle>
+
+<h1>Export/Import Database</h1>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Export Database</h5>
+                <p>Export the current database to a ZIP file.</p>
+                <p><strong>Export Location:</strong><br />@exportPath</p>
+                <button class="btn btn-primary" @onclick="ExportDatabase" disabled="@isExporting">
+                    @if (isExporting)
+                    {
+                        <span>Exporting...</span>
+                    }
+                    else
+                    {
+                        <span>Export Now</span>
+                    }
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Import Database</h5>
+                <p>Import database from a ZIP file.</p>
+                <div class="mb-3">
+                    <label class="form-label">ZIP File Path:</label>
+                    <input type="text" class="form-control" @bind="importPath" placeholder="Enter full path to ZIP file" />
+                </div>
+                <button class="btn btn-warning" @onclick="ImportDatabase" disabled="@isImporting">
+                    @if (isImporting)
+                    {
+                        <span>Importing...</span>
+                    }
+                    else
+                    {
+                        <span>Import Now</span>
+                    }
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <div class="alert @(message.StartsWith("SUCCESS") ? "alert-success" : "alert-danger")">
+        @message
+    </div>
+}
+
+@code {
+    private string exportPath = string.Empty;
+    private string importPath = string.Empty;
+    private string message = string.Empty;
+    private bool isExporting = false;
+    private bool isImporting = false;
+
+    protected override void OnInitialized()
+    {
+        exportPath = ExportImportService.GetDefaultExportPath();
+    }
+
+    private async Task ExportDatabase()
+    {
+        isExporting = true;
+        message = string.Empty;
+
+        try
+        {
+            message = await ExportImportService.ExportDatabaseAsync(exportPath);
+        }
+        finally
+        {
+            isExporting = false;
+        }
+    }
+
+    private async Task ImportDatabase()
+    {
+        if (string.IsNullOrWhiteSpace(importPath))
+        {
+            message = "ERROR: Please specify import file path";
+            return;
+        }
+
+        isImporting = true;
+        message = string.Empty;
+
+        try
+        {
+            message = await ExportImportService.ImportDatabaseAsync(importPath);
+        }
+        finally
+        {
+            isImporting = false;
+        }
+    }
+}
