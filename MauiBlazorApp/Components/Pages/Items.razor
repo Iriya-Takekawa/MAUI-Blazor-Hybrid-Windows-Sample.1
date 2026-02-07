@@ -1,0 +1,187 @@
+@page "/items"
+@using MauiBlazorApp.Data
+@using MauiBlazorApp.Models
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<AppDbContext> DbFactory
+
+<PageTitle>Items</PageTitle>
+
+<h1>Items</h1>
+
+<div class="mb-3">
+    <button class="btn btn-primary" @onclick="ShowAddForm">Add New Item</button>
+</div>
+
+@if (showForm)
+{
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title">@(editingItem?.Id > 0 ? "Edit" : "Add") Item</h5>
+            <EditForm Model="editingItem" OnValidSubmit="SaveItem">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="mb-3">
+                    <label class="form-label">Code:</label>
+                    <InputText class="form-control" @bind-Value="editingItem!.Code" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Name:</label>
+                    <InputText class="form-control" @bind-Value="editingItem!.Name" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Category:</label>
+                    <InputSelect class="form-control" @bind-Value="editingItem!.CategoryId">
+                        <option value="0">-- Select Category --</option>
+                        @foreach (var category in categories)
+                        {
+                            <option value="@category.Id">@category.Name</option>
+                        }
+                    </InputSelect>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Amount:</label>
+                    <InputNumber class="form-control" @bind-Value="editingItem!.Amount" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Note:</label>
+                    <InputTextArea class="form-control" @bind-Value="editingItem!.Note" rows="3" />
+                </div>
+
+                <button type="submit" class="btn btn-success">Save</button>
+                <button type="button" class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@if (message != null)
+{
+    <div class="alert alert-info">@message</div>
+}
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Code</th>
+            <th>Name</th>
+            <th>Category</th>
+            <th>Amount</th>
+            <th>Note</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in items)
+        {
+            <tr>
+                <td>@item.Id</td>
+                <td>@item.Code</td>
+                <td>@item.Name</td>
+                <td>@item.Category?.Name</td>
+                <td>@item.Amount.ToString("C")</td>
+                <td>@item.Note</td>
+                <td>
+                    <button class="btn btn-sm btn-warning" @onclick="() => EditItem(item)">Edit</button>
+                    <button class="btn btn-sm btn-danger" @onclick="() => DeleteItem(item)">Delete</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    private List<Item> items = new();
+    private List<Category> categories = new();
+    private Item? editingItem;
+    private bool showForm = false;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        using var context = await DbFactory.CreateDbContextAsync();
+        items = await context.Items.Include(i => i.Category).OrderBy(i => i.Code).ToListAsync();
+        categories = await context.Categories.OrderBy(c => c.Name).ToListAsync();
+    }
+
+    private void ShowAddForm()
+    {
+        editingItem = new Item();
+        showForm = true;
+        message = null;
+    }
+
+    private void EditItem(Item item)
+    {
+        editingItem = new Item
+        {
+            Id = item.Id,
+            Code = item.Code,
+            Name = item.Name,
+            CategoryId = item.CategoryId,
+            Amount = item.Amount,
+            Note = item.Note
+        };
+        showForm = true;
+        message = null;
+    }
+
+    private async Task SaveItem()
+    {
+        try
+        {
+            using var context = await DbFactory.CreateDbContextAsync();
+            
+            if (editingItem!.Id == 0)
+            {
+                context.Items.Add(editingItem);
+            }
+            else
+            {
+                context.Items.Update(editingItem);
+            }
+            
+            await context.SaveChangesAsync();
+            message = "Item saved successfully";
+            showForm = false;
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            message = $"Error: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteItem(Item item)
+    {
+        try
+        {
+            using var context = await DbFactory.CreateDbContextAsync();
+            context.Items.Remove(item);
+            await context.SaveChangesAsync();
+            message = "Item deleted successfully";
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            message = $"Error: {ex.Message}";
+        }
+    }
+
+    private void CancelEdit()
+    {
+        showForm = false;
+        editingItem = null;
+        message = null;
+    }
+}

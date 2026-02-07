@@ -1,0 +1,47 @@
+@page "/report"
+@using MauiBlazorApp.Services
+@inject IReportService ReportService
+
+<PageTitle>Report</PageTitle>
+
+<h1>Report Template</h1>
+
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Report Information</h5>
+        
+        <div class="mb-3">
+            <strong>Template Path:</strong>
+            <p class="font-monospace">@templatePath</p>
+        </div>
+
+        <div class="mb-3">
+            <strong>Template Status:</strong>
+            @if (templateExists)
+            {
+                <span class="badge bg-success">Found</span>
+            }
+            else
+            {
+                <span class="badge bg-danger">Not Found</span>
+            }
+        </div>
+
+        <div class="alert alert-info">
+            <h6>Note:</h6>
+            <p>This is a dummy report service implementation. In production, this would integrate with AS-Report or SpreadsheetGear for actual report generation.</p>
+            <p>The IReportService interface allows for easy replacement with the actual implementation.</p>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string templatePath = string.Empty;
+    private bool templateExists = false;
+
+    protected override void OnInitialized()
+    {
+        templatePath = ReportService.GetReportTemplatePath();
+        templateExists = ReportService.ValidateReportTemplate();
+    }
+}
